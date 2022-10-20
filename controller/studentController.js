@@ -75,7 +75,7 @@ exports.studentRegister = (req, res, next) => {
       return next(new Error(err));
     });
 };
-// User Forget Password
+// User Forget Password send
 exports.studentForgetPassword = (req, res, next) => {
   const { email } = req.body;
   Student.findOne({ email: email })
