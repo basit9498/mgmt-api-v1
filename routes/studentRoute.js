@@ -45,7 +45,6 @@ route.post("/reset-password/:token", studentController.studentResetPassword);
 // Course Action Related
 route.put(
   "/course/:id/enroll-request",
-  isAuth,
   studentController.studentCourseEnrollRequest
 );
 

@@ -19,6 +19,10 @@ const courseSchema = new Schema({
   course_topics: {
     type: [String],
   },
+  course_img: {
+    type: String,
+    required: [true, "Course Image is Required!"],
+  },
 });
 
 module.exports = mongoose.model("Course", courseSchema);

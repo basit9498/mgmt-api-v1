@@ -22,7 +22,7 @@ exports.studentLogin = (req, res, next) => {
               message: "Please Enter Valid Email & Password",
             });
           }
-          req.session.user = result;
+
           return res.json({
             message: "User Login",
             result,
@@ -39,10 +39,8 @@ exports.studentLogin = (req, res, next) => {
     });
 };
 exports.studentLogout = (req, res, next) => {
-  req.session.destroy((err) => {
-    res.json({
-      message: "logout",
-    });
+  res.json({
+    message: "logout",
   });
 };
 exports.studentRegister = (req, res, next) => {
@@ -118,6 +116,7 @@ exports.studentForgetPassword = (req, res, next) => {
       });
     });
 };
+
 // Reset Password
 exports.studentResetPassword = (req, res, next) => {
   const token = req.params.token;
@@ -155,15 +154,19 @@ exports.studentResetPassword = (req, res, next) => {
       res.json({ err });
     });
 };
+
+// student Enroll in Course
+
 exports.studentCourseEnrollRequest = (req, res, next) => {
   const c_id = req.params.id;
-  // const { s_id } = req.body;
+  const { s_id } = req.body;
   TakeCourse.findById(c_id)
     .populate("course_detail.course_id")
     .then((result) => {
       if (result?.students.length > 0) {
+        // Use User token For Now I user s_id i remove the session
         const studentIndex = result?.students.findIndex(
-          (i) => i.s_id.toString() === req.session.user._id.toString()
+          (i) => i.s_id.toString() === s_id.toString()
         );
 
         if (studentIndex >= 0) {
@@ -177,7 +180,7 @@ exports.studentCourseEnrollRequest = (req, res, next) => {
         {
           $push: {
             students: {
-              s_id: req.session.user._id,
+              s_id: s_id,
               fee: result.course_detail.course_id.course_fee,
             },
           },

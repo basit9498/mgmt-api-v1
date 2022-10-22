@@ -1,7 +1,20 @@
 const Staff = require("../model/staffModel");
 const bcrypt = require("bcryptjs");
+const { validationResult } = require("express-validator");
 
 module.exports.registerStaff = (req, res, next) => {
+  const validErrors = validationResult(req);
+
+  if (!validErrors.isEmpty()) {
+    const errorDetail = validErrors.array().map((error) => {
+      return error.msg;
+    });
+
+    const error = new Error("Input Validation Error");
+    error.detail = errorDetail;
+    error.status = 422;
+    throw error;
+  }
   const { name, email, password, salary, role } = req.body;
   bcrypt
     .hash(password, 12)
@@ -13,23 +26,15 @@ module.exports.registerStaff = (req, res, next) => {
         salary,
         role,
       });
-      staff
-        .save()
-        .then((result) => {
-          res.json({
-            result,
-          });
-        })
-        .catch((err) => {
-          res.json({
-            err,
-          });
-        });
+      return staff.save();
+    })
+    .then((staff) => {
+      res.json({
+        message: "Staff has been added!",
+        staff,
+      });
     })
     .catch((err) => {
-      res.json({
-        status: false,
-        error: "Password is Required !",
-      });
+      next(err);
     });
 };
