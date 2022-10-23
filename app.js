@@ -40,6 +40,3 @@ moogooes
   .catch((err) => {
     console.log("err", err);
   });
-
-MONGODB_URI = "mongodb://localhost:27017/mgmt-db";
-JWT_TOKEN_SECRET_KEY = "Ybhsl879$%jagYURa7162374(*&hwfNJAkBacha$5bsma";
