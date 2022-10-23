@@ -1,6 +1,8 @@
 const Course = require("../model/courseModel");
 const { validationResult } = require("express-validator");
+const file = require("../utils/file-delete");
 
+// Add New Course
 exports.addNewCourse = (req, res, next) => {
   const validErrors = validationResult(req);
 
@@ -47,6 +49,101 @@ exports.addNewCourse = (req, res, next) => {
     });
 };
 
+// Update The Course
+exports.updateCourse = async (req, res, next) => {
+  try {
+    const validErrors = validationResult(req);
+    if (!validErrors.isEmpty()) {
+      const errorDetail = validErrors.array().map((error) => {
+        return error.msg;
+      });
+
+      const error = new Error("Input Validation Error");
+      error.detail = errorDetail;
+      error.status = 422;
+      throw error;
+    }
+
+    const { id } = req.params;
+    let imageUrl = req.file;
+    const { course_id, course_name, course_fee, course_topics } = req.body;
+
+    const course = await Course.findById(id);
+
+    if (!course) {
+      if (imageUrl) {
+        file.singleFileDelete(imageUrl.path);
+      }
+      const error = new Error("Course Not Found!");
+      error.status = 200;
+      throw error;
+    }
+
+    if (!imageUrl) {
+      if (!course.course_img) {
+        const error = new Error("Please attach Image file [.jpg]");
+        error.status = 422;
+        throw error;
+      }
+
+      imageUrl = course.course_img;
+    } else {
+      imageUrl = imageUrl.path;
+      if (course.course_img) {
+        file.singleFileDelete(course.course_img);
+      }
+    }
+
+    // Data Save working
+    course.course_id = course_id;
+    course.course_name = course_name;
+    course.course_fee = +course_fee;
+    course.course_topics = course_topics;
+    course.course_img = imageUrl;
+
+    const courseSave = await course.save();
+
+    res.json({
+      message: "Course Has Been Update !",
+      course: courseSave,
+    });
+  } catch (error) {
+    if (!error.status) {
+      error.status = 500;
+    }
+    next(error);
+  }
+};
+
+//Delete The Course
+exports.deleteCourse = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const course = await Course.findById(id);
+
+    if (!course) {
+      const error = new Error("Course Not Found!");
+      error.status = 200;
+      throw error;
+    }
+
+    if (course.course_img) {
+      file.singleFileDelete(course.course_img);
+    }
+
+    await Course.findByIdAndRemove(id);
+
+    res.status(200).json({
+      message: "Course Has Been Deleted!",
+    });
+  } catch (error) {
+    if (!error.status) {
+      error.status = 500;
+    }
+    next(error);
+  }
+};
 // Get All Course [pagination,]
 exports.getAllCourse = (req, res, next) => {
   let COUNT, PER_PAGE, CURRENT_PAGE;
@@ -89,9 +186,9 @@ exports.getAllCourse = (req, res, next) => {
         previous_page_link = null;
       } else if (+CURRENT_PAGE * +PER_PAGE > COUNT) {
         let update_current_page = COUNT / +PER_PAGE;
-        previous_page_link = `${mainHostPath}/course/list?itemPerPage=${PER_PAGE}&page=${
+        previous_page_link = `${mainHostPath}/course/list?itemPerPage=${PER_PAGE}&page=${Math.ceil(
           +update_current_page - 1
-        }`;
+        )}`;
       } else {
         previous_page_link = `${mainHostPath}/course/list?itemPerPage=${PER_PAGE}&page=${
           +CURRENT_PAGE - 1

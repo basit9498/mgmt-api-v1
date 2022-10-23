@@ -7,13 +7,23 @@ const Student = require("../model/studentModel");
 const route = express.Router();
 
 // Auth Related
-route.post("/login", studentController.studentLogin);
+route.post(
+  "/login",
+  [
+    check("email", "Please enter a valid email address")
+      .isEmail()
+      .normalizeEmail(),
+    body("password", "Password Required!").notEmpty(),
+  ],
+  studentController.studentLogin
+);
 route.get("/logout", studentController.studentLogout);
 route.post(
   "/register",
   [
     check("email")
       .isEmail()
+
       .withMessage("Please enter a valid email address")
       .normalizeEmail()
       .custom((value, { req }) => {
@@ -30,7 +40,10 @@ route.post(
       .trim(),
     body("password", "Password should atleast 6 character and Alphanumeric")
       .isAlphanumeric()
-      .isLength({ min: 6 }),
+      .bail()
+      .isLength({ min: 6 })
+      .bail()
+      .notEmpty(),
     body("conformPassword").custom((value, { req }) => {
       if (value !== req.body.password) {
         throw new Error("Password Not Match");

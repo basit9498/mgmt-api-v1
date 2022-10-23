@@ -5,55 +5,23 @@ const crypto = require("crypto");
 const mailSend = require("../utils/mail-Send");
 const { validationResult } = require("express-validator");
 
-exports.studentLogin = (req, res, next) => {
-  const { email, password } = req.body;
-  Student.findOne({ email: email })
-    .then((result) => {
-      if (!result) {
-        return res.json({
-          message: "Please Enter Valid Email & Password",
-        });
-      }
-      bcrypt
-        .compare(password, result.password)
-        .then((matched) => {
-          if (!matched) {
-            return res.json({
-              message: "Please Enter Valid Email & Password",
-            });
-          }
-
-          return res.json({
-            message: "User Login",
-            result,
-          });
-        })
-        .catch((err) => {
-          console.log("Err", err);
-        });
-    })
-    .catch((err) => {
-      res.json({
-        err,
-      });
-    });
-};
-exports.studentLogout = (req, res, next) => {
-  res.json({
-    message: "logout",
-  });
-};
+// add new user
 exports.studentRegister = (req, res, next) => {
-  const { name, email, password } = req.body;
-  const validatorErrors = validationResult(req);
+  const validErrors = validationResult(req);
 
-  if (!validatorErrors.isEmpty()) {
-    return res.status(422).json({
-      error: validatorErrors.array().map((error) => {
-        return { field_name: error.param, error_message: error.msg };
-      }),
+  if (!validErrors.isEmpty()) {
+    const errorDetail = validErrors.array().map((error) => {
+      return error.msg;
     });
+
+    const error = new Error("Input Validation Error");
+    error.detail = errorDetail;
+    error.status = 422;
+    throw error;
   }
+
+  const { name, email, password } = req.body;
+
   bcrypt
     .hash(password, 12)
     .then((encrptPass) => {
@@ -64,15 +32,71 @@ exports.studentRegister = (req, res, next) => {
       });
       return student.save();
     })
-    .then((result) => {
+    .then((student) => {
       res.json({
-        result,
+        message: "Student has been add successfully!",
+        student,
       });
     })
-    .catch((err) => {
-      return next(new Error(err));
+    .catch((error) => {
+      if (!error.status) {
+        error.status = 500;
+      }
+      next(error);
     });
 };
+// Student Login
+exports.studentLogin = async (req, res, next) => {
+  try {
+    const validErrors = validationResult(req);
+
+    if (!validErrors.isEmpty()) {
+      const errorDetail = validErrors.array().map((error) => {
+        return error.msg;
+      });
+
+      const error = new Error("Input Validation Error");
+      error.detail = errorDetail;
+      error.status = 422;
+      throw error;
+    }
+
+    const { email, password } = req.body;
+
+    const student = await Student.findOne({ email: email });
+
+    if (!student) {
+      const error = new Error("Please Enter Valid Email & Password");
+      error.status = 202;
+      throw error;
+    }
+
+    const passwordMatched = await bcrypt.compare(password, student.password);
+
+    if (!passwordMatched) {
+      const error = new Error("Please Enter Valid Email & Password");
+      error.status = 202;
+      throw error;
+    }
+
+    res.status(200).json({
+      message: "User Login",
+      student,
+    });
+  } catch (error) {
+    if (!error.status) {
+      error.status = 500;
+    }
+    next(error);
+  }
+};
+
+exports.studentLogout = (req, res, next) => {
+  res.json({
+    message: "logout",
+  });
+};
+
 // User Forget Password send
 exports.studentForgetPassword = (req, res, next) => {
   const { email } = req.body;
