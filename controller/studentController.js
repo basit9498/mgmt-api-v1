@@ -4,6 +4,7 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const mailSend = require("../utils/mail-Send");
 const { validationResult } = require("express-validator");
+const jwt = require("jsonwebtoken");
 
 // add new user
 exports.studentRegister = (req, res, next) => {
@@ -79,8 +80,18 @@ exports.studentLogin = async (req, res, next) => {
       throw error;
     }
 
+    const token = jwt.sign(
+      {
+        id: student._id.toString(),
+        email: student.email,
+      },
+      process.env.JWT_TOKEN_SECRET_KEY,
+      { expiresIn: "1h" }
+    );
+
     res.status(200).json({
       message: "User Login",
+      token: token,
       student,
     });
   } catch (error) {
@@ -183,14 +194,13 @@ exports.studentResetPassword = (req, res, next) => {
 
 exports.studentCourseEnrollRequest = (req, res, next) => {
   const c_id = req.params.id;
-  const { s_id } = req.body;
   TakeCourse.findById(c_id)
     .populate("course_detail.course_id")
     .then((result) => {
       if (result?.students.length > 0) {
         // Use User token For Now I user s_id i remove the session
         const studentIndex = result?.students.findIndex(
-          (i) => i.s_id.toString() === s_id.toString()
+          (i) => i.s_id.toString() === req.userId.toString()
         );
 
         if (studentIndex >= 0) {
@@ -204,7 +214,7 @@ exports.studentCourseEnrollRequest = (req, res, next) => {
         {
           $push: {
             students: {
-              s_id: s_id,
+              s_id: req.userId,
               fee: result.course_detail.course_id.course_fee,
             },
           },
