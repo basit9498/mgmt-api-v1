@@ -2,6 +2,7 @@ const express = require("express");
 const { check, body } = require("express-validator");
 const courseController = require("../controller/courseController");
 const fileUpload = require("../middleware/file-upload");
+const isAuth = require("../middleware/is-auth");
 
 const route = express.Router();
 

@@ -55,9 +55,11 @@ route.post(
 );
 route.post("/forget-password", studentController.studentForgetPassword);
 route.post("/reset-password/:token", studentController.studentResetPassword);
+route.post("/refresh-token", studentController.studentRefreshToken);
 // Course Action Related
 route.put(
   "/course/:id/enroll-request",
+  isAuth,
   studentController.studentCourseEnrollRequest
 );
 

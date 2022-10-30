@@ -99,32 +99,6 @@ exports.assignTeacherTakeCourse = (req, res, next) => {
     });
 };
 
-// get all Student Request for single auth [ralated-teacher,admin]
-exports.takeCourseStudentRequestList = (req, res, next) => {
-  const id = req.params.id;
-  TakeCourse.findById(id)
-    .populate("students.s_id", "name ")
-    .then((result) => {
-      if (!result) {
-        return res.json({
-          message: "No Founded Course Detail",
-        });
-      }
-
-      const student_request_list = result?.students?.filter((data) => {
-        if (data.allow_status === "REQUESTED") {
-          return data;
-        }
-      });
-      return res.json({
-        result: student_request_list,
-      });
-    })
-    .catch((err) => {
-      res.json({ err });
-    });
-};
-
 // Payment Done By => auth [ralated-Teacher,admin]
 exports.takeCourseStudentPaymemtDone = (req, res, next) => {
   const { c_id, s_id } = req.params;
@@ -160,4 +134,40 @@ exports.takeCourseStudentPaymemtDone = (req, res, next) => {
     .catch((err) => {
       res.json({ err });
     });
+};
+
+/**
+ * Student Related
+ */
+// get all Student Request for single auth [ralated-teacher,admin]
+exports.takeCourseStudentRequestList = (req, res, next) => {
+  const id = req.params.id;
+  TakeCourse.findById(id)
+    .populate("students.s_id", "name ")
+    .then((result) => {
+      if (!result) {
+        return res.json({
+          message: "No Founded Course Detail",
+        });
+      }
+
+      const student_request_list = result?.students?.filter((data) => {
+        if (data.allow_status === "REQUESTED") {
+          return data;
+        }
+      });
+      return res.json({
+        result: student_request_list,
+      });
+    })
+    .catch((err) => {
+      res.json({ err });
+    });
+};
+
+exports.takeCourseSingleStudentCourseList = (req, res, next) => {
+  // We do later
+  res.status(200).json({
+    student: "Student Course will be avaible latter",
+  });
 };

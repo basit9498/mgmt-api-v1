@@ -4,6 +4,12 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const mailSend = require("../utils/mail-Send");
 const { validationResult } = require("express-validator");
+const jwt = require("jsonwebtoken");
+const { json } = require("body-parser");
+
+/**
+ * Student Auth
+ */
 
 // add new user
 exports.studentRegister = (req, res, next) => {
@@ -79,9 +85,56 @@ exports.studentLogin = async (req, res, next) => {
       throw error;
     }
 
+    const token = jwt.sign(
+      {
+        id: student._id.toString(),
+        email: student.email,
+      },
+      process.env.JWT_TOKEN_SECRET_KEY,
+      { expiresIn: "10h" }
+    );
+
+    const refresh_token = jwt.sign(
+      {
+        id: student._id.toString(),
+        email: student.email,
+      },
+      process.env.JWT_REFRESH_TOKEN_SECRET_KEY,
+      { expiresIn: "5 days" }
+    );
+
+    // Save tokens in user detail note set string into data
+    student.log_tokens.push({
+      login_token: {
+        token: token,
+        expire_time: new Date(Date.now() + 10 * 60 * 60 * 1000), //expire in 10 h
+      },
+      refresh_token: {
+        token: refresh_token,
+        expire_time: new Date(Date.now() + 120 * 60 * 60 * 1000), //expire in 5 day
+      },
+    });
+
+    // Send Cookies with response
+    // res.cookie("jwt", refresh_token, {
+    //   maxAge: 24 * 60 * 60 * 1000,
+    //   httpOnly: true, // http only, prevents JavaScript cookie access
+    //   secure: true, // cookie must be sent over https / ssl
+    // });
+
+    await student.save();
+
+    const student_data_send = {
+      _id: student._id,
+      name: student.name,
+      email: student.email,
+    };
+
     res.status(200).json({
       message: "User Login",
-      student,
+      token: token,
+      refresh_token,
+      student: student_data_send,
     });
   } catch (error) {
     if (!error.status) {
@@ -179,18 +232,75 @@ exports.studentResetPassword = (req, res, next) => {
     });
 };
 
+// Refresh Token for now i am sending with post bosy --> later will se the best Way
+exports.studentRefreshToken = async (req, res, next) => {
+  try {
+    const { refresh_token } = req.body;
+    const student = await Student.findOne({
+      log_tokens: {
+        $elemMatch: {
+          $and: [
+            { "refresh_token.token": refresh_token },
+            { "refresh_token.expire_time": { $gt: new Date() } },
+          ],
+        },
+      },
+    });
+
+    if (!student) {
+      const error = new Error("Refresh Token Expire please Login Again!");
+      error.status = 401;
+      throw error;
+    }
+
+    const token = jwt.sign(
+      {
+        id: student._id.toString(),
+        email: student.email,
+      },
+      process.env.JWT_TOKEN_SECRET_KEY,
+      { expiresIn: "10h" }
+    );
+
+    // student
+    student.log_tokens = student?.log_tokens?.map((_token) => {
+      if (_token?.refresh_token?.token === refresh_token) {
+        _token.login_token.token = token;
+        _token.login_token.expire_time = new Date(
+          Date.now() + 10 * 60 * 60 * 1000
+        );
+      }
+      return _token;
+    });
+
+    await student.save();
+
+    res.status(200).json({
+      message: "New Token ",
+      token,
+    });
+  } catch (error) {
+    if (!error.status) {
+      error.status = 500;
+    }
+    next(error);
+  }
+};
+/**
+ * Student Course Manage mangment
+ */
+
 // student Enroll in Course
 
 exports.studentCourseEnrollRequest = (req, res, next) => {
   const c_id = req.params.id;
-  const { s_id } = req.body;
   TakeCourse.findById(c_id)
     .populate("course_detail.course_id")
     .then((result) => {
       if (result?.students.length > 0) {
         // Use User token For Now I user s_id i remove the session
         const studentIndex = result?.students.findIndex(
-          (i) => i.s_id.toString() === s_id.toString()
+          (i) => i.s_id.toString() === req.userId.toString()
         );
 
         if (studentIndex >= 0) {
@@ -204,7 +314,7 @@ exports.studentCourseEnrollRequest = (req, res, next) => {
         {
           $push: {
             students: {
-              s_id: s_id,
+              s_id: req.userId,
               fee: result.course_detail.course_id.course_fee,
             },
           },
