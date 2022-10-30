@@ -24,6 +24,16 @@ const studentSchema = new Schema({
       enum: [null, undefined, "PASSWORD_RESET", "ACCOUNT_VERIFY"],
     },
   },
+  log_tokens: [
+    {
+      login_token: { token: String, expire_time: Date },
+      refresh_token: { token: String, expire_time: Date },
+      ip_address: {
+        type: String,
+        default: "postman_login",
+      },
+    },
+  ],
   applications: [
     {
       status_approved: {
