@@ -15,6 +15,10 @@ const studentSchema = new Schema({
     type: String,
     required: true,
   },
+  user_role: {
+    role: { type: String, required: true, default: "STUDENT" },
+  },
+
   token_detail: {
     token_key: { type: String },
     token_expire: { type: Date },

@@ -89,6 +89,7 @@ exports.studentLogin = async (req, res, next) => {
       {
         id: student._id.toString(),
         email: student.email,
+        role: student.user_role.role,
       },
       process.env.JWT_TOKEN_SECRET_KEY,
       { expiresIn: "10h" }
@@ -257,6 +258,7 @@ exports.studentRefreshToken = async (req, res, next) => {
       {
         id: student._id.toString(),
         email: student.email,
+        role: student.role,
       },
       process.env.JWT_TOKEN_SECRET_KEY,
       { expiresIn: "10h" }

@@ -3,11 +3,14 @@ const bodyParse = require("body-parser");
 const moogooes = require("mongoose");
 const path = require("path");
 // const cookieParser = require("cookie-parser");
+const helmet = require("helmet");
+const morgan = require("morgan");
 require("dotenv").config();
 
 const errorHandler = require("./middleware/error-handler");
 // const fileUpload = require("./middleware/file-upload");
 const accessHeader = require("./middleware/access-header");
+const accessLogStream = require("./utils/save-log-filePath");
 
 const studentRoute = require("./routes/studentRoute");
 const courseRoute = require("./routes/courseRoute");
@@ -16,6 +19,8 @@ const courseTakenRoute = require("./routes/takeCourseRoute");
 
 const app = express();
 
+app.use(helmet());
+app.use(morgan("combined", { stream: accessLogStream }));
 // app.use(cookieParser());
 app.use("/data", express.static(path.join(__dirname, "data")));
 app.use(bodyParse.json()); // for parsing application/json

@@ -5,15 +5,18 @@ const Staff = require("../model/staffModel");
 
 const route = express.Router();
 
+// Staff Register
 route.post(
   "/register",
   [
     body("name", `'Name' should atleast 3 characters`)
       .isLength({ min: 3 })
       .trim(),
-    body("email", `'Email' should atleast 3 characters`)
+    body("email", `'Email' is Not Valid `)
       .notEmpty()
+      .bail()
       .isEmail()
+      .bail()
       .normalizeEmail()
       .custom((value, { req }) => {
         return Staff.findOne({ email: value }).then((staff) => {
@@ -31,8 +34,11 @@ route.post(
       `'Password' should be atleast 6 characters and alphanumeric`
     )
       .notEmpty()
+      .bail()
       .isAlphanumeric()
-      .isLength({ min: 6 }),
+      .bail()
+      .isLength({ min: 6 })
+      .bail(),
     body("conform_password", "'Conform Password' Please Provide")
       .notEmpty()
       .custom((value, { req }) => {
@@ -44,6 +50,7 @@ route.post(
     body("salary", `'Salary' Please Provide the Salary Detail`).isNumeric(),
     body("role", "Please Provide Role")
       .notEmpty()
+      .bail()
       .custom((value, { req }) => {
         const roleData = ["ADMIN", "CASHER", "TEACHER"];
         if (!roleData.includes(value)) {
@@ -56,5 +63,26 @@ route.post(
   ],
   staffController.registerStaff
 );
+
+// Staff login
+route.post(
+  "/login",
+  [
+    body("email", `'Email' is Not Valid `)
+      .notEmpty()
+      .bail()
+      .isEmail()
+      .bail()
+      .normalizeEmail(),
+    body(
+      "password",
+      `'Password' should be atleast 6 characters and alphanumeric`
+    ).notEmpty(),
+  ],
+  staffController.loginStaff
+);
+
+// Staff refresh Token
+route.post("/refresh-token", staffController.staffRefreshToken);
 
 module.exports = route;
