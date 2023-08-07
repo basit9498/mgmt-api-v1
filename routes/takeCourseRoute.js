@@ -1,5 +1,6 @@
 const express = require("express");
 const takeCourseController = require("../controller/takeCourseController");
+const isAuthorized = require("../middleware/authorization/is-authorize");
 const isAuth = require("../middleware/is-auth");
 
 const route = express.Router();
@@ -22,9 +23,11 @@ route.put(
   takeCourseController.takeCourseStudentPaymemtDone
 );
 
+// Student Get Own course [me]
 route.get(
   "/student/me",
   isAuth,
+  isAuthorized(["STUDENT"]),
   takeCourseController.takeCourseSingleStudentCourseList
 );
 

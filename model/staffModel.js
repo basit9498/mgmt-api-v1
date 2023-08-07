@@ -28,6 +28,16 @@ const staffSchema = new Schema({
       message: "{VALUE} is not such a role",
     },
   },
+  log_tokens: [
+    {
+      login_token: { token: String, expire_time: Date },
+      refresh_token: { token: String, expire_time: Date },
+      ip_address: {
+        type: String,
+        default: "postman_login",
+      },
+    },
+  ],
 });
 
 module.exports = mongoose.model("Staff", staffSchema);

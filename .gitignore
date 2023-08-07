@@ -1,4 +1,8 @@
 /node_modules
 
+# log 
+access.log
+
+
 # misc
 .env
